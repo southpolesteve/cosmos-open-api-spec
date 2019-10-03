@@ -1,0 +1,147 @@
+openapi: 3.0.1
+info:
+  title: Microsoft Azure Cosmos DB REST API
+  description: 'REST API for Microsoft Azure Cosmos DB'
+  termsOfService: https://docs.microsoft.com/en-us/azure/cosmos-db/introduction
+  contact:
+    email: brchon@microsoft.com
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.0
+externalDocs:
+  description: Find out more about Cosmos DB
+  url: https://docs.microsoft.com/en-us/azure/cosmos-db/introduction
+servers:
+- url: https://localhost:8081/
+- url: https://localhost:443/
+tags:
+- name: document
+  description: CosmosDB Document
+  externalDocs:
+    description: Find out more
+    url: https://docs.microsoft.com/en-us/rest/api/cosmos-db/documents
+paths:
+  /dbs/{databaseName}/colls/{collectionName}/docs:
+    post:
+      tags:
+      - document
+      summary: Creates a new document in a collection.
+      security: 
+        - ApiKeyAuth: []
+      operationId: createDocument
+      parameters: 
+      - $ref: '#/components/parameters/DatabaseName'
+      - $ref: '#/components/parameters/CollectionName'
+      - $ref: '#/components/parameters/Version'
+      - $ref: '#/components/parameters/Date'
+      requestBody:
+        description: JSON document that needs to be added to the collection.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentRequest'
+        required: true
+      responses:
+        201:
+          description: The document was created.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentResponse'
+        400:
+          description: The JSON body is invalid.
+          content: {}
+        403:
+          description: The operation could not be completed because the storage limit of the partition has been reached.
+          content: {}
+        409:
+          description: The ID provided for the new document has been taken by an existing document.
+          content: {}
+        413:
+          description: The document size in the request exceeded the allowable document size.
+          content: {}
+components:
+  schemas:
+    DocumentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: string
+          example: "AndersenFamily"
+        _rid:
+          type: string
+          format: byte
+          example: "1KtjAImkcgwBAAAAAAAAAA=="
+        _ts:
+          type: integer
+          format: int64
+          example: 1459218509
+        _self:
+          type: string
+          format: uri
+          example: "dbs/1KtjAA==/colls/1KtjAImkcgw=/docs/1KtjAImkcgwBAAAAAAAAAA==/"
+        _etag:
+          type: string 
+          format: guid
+          example: "\"00003200-0000-0000-0000-56f9e84d0000\""
+        _attachments:
+          type: string
+          format: string
+          example: "attachments/"
+    DocumentRequest:
+      type: object
+  parameters:
+    DatabaseName:
+      name: databaseName
+      in: path
+      description: The database name.
+      required: true
+      schema:
+        type: string
+      example: MyDatabase
+    CollectionName:
+      name: collectionName
+      in: path
+      description: The collection name.
+      required: true
+      schema:
+        type: string
+      example: MyCollection
+    Version:
+      name: x-ms-version
+      in: header
+      description: The API version.
+      required: true
+      schema:
+        type: string
+        enum: 
+          - "2018-12-31"
+          - "2018-09-17"
+          - "2018-08-31"
+          - "2018-06-18"
+          - "2017-11-15"
+          - "2017-05-03"
+          - "2017-02-22"
+          - "2017-01-19"
+          - "2016-07-11"
+          - "2015-12-16"
+          - "2015-08-06"
+          - "2015-06-03"
+          - "2015-04-08"
+          - "2014-08-21"
+    Date:
+      name: x-ms-date
+      in: header
+      description: The date the request was sent.
+      required: true
+      schema:
+        type: string
+        format: date-time
+      example: Tue, 29 Mar 2016 02:28:29 GMT
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: authorization
