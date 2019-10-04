@@ -13,14 +13,19 @@ externalDocs:
   description: Find out more about Cosmos DB
   url: https://docs.microsoft.com/en-us/azure/cosmos-db/introduction
 servers:
-- url: https://localhost:8081/
-- url: https://localhost:443/
+  - url: https://localhost:8081/
+  - url: https://localhost:443/
 tags:
-- name: document
-  description: CosmosDB Document
-  externalDocs:
-    description: Find out more
-    url: https://docs.microsoft.com/en-us/rest/api/cosmos-db/documents
+  - name: document
+    description: Cosmos DB Document
+    externalDocs:
+      description: Find out more
+      url: https://docs.microsoft.com/en-us/rest/api/cosmos-db/documents
+  - name: database
+    description: Cosmos DB Datbase
+    externalDocs:
+      description: Find out more
+      url: https://docs.microsoft.com/en-us/rest/api/cosmos-db/databases
 paths:
   /dbs/{databaseName}/colls/{collectionName}/docs:
     parameters:
@@ -71,7 +76,7 @@ paths:
       summary: Returns a list of documents under the collection.
       security:
         - ApiKeyAuth: []
-      operationId: readFeed
+      operationId: readDocumentFeed
       parameters:
         - $ref: '#/components/parameters/PartitionKey'
         - $ref: '#/components/parameters/PageSize'
@@ -102,8 +107,7 @@ paths:
       summary: Retrieves a document by its partition key and document key.
       security:
         - ApiKeyAuth: []
-      operationId: getDocument
-
+      operationId: readDocument
       responses:
         200:
           description: Successfully retrieved document.
@@ -159,6 +163,82 @@ paths:
               $ref: '#/components/headers/x-ms-request-charge'
         404:
           description: The document was not found.
+  /dbs:
+    parameters:
+        - $ref: '#/components/parameters/Version'
+        - $ref: '#/components/parameters/Date'
+    post:
+      tags:
+        - database
+      summary: Creates a new database in the database account.
+      security:
+        - ApiKeyAuth: []
+      operationId: createDatabase
+      requestBody:
+        description: The JSON of the database that needs to be added to the database account.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DatabaseRequest'
+      responses:
+        201:
+          description: Successfully created the database.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseResponse'
+    get:
+      tags:
+        - database
+      summary: Gets a list of databases in the database account.
+      security:
+        - ApiKeyAuth: []
+      operationId: databaseReadFeed
+      responses:
+        200:
+          description: Succesfully read a page of from the database feed.
+          headers:
+            x-ms-continuation:
+              $ref: '#/components/headers/x-ms-continuation'
+            x-ms-request-charge:
+              $ref: '#/components/headers/x-ms-request-charge'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseFeedResponse'
+  /dbs/{databaseName}:
+    parameters:
+      - $ref: '#/components/parameters/DatabaseName'
+      - $ref: '#/components/parameters/Version'
+      - $ref: '#/components/parameters/Date'
+    get:
+      tags:
+        - database
+      summary: Gets a database from the database account.
+      security:
+        - ApiKeyAuth: []
+      operationId: ReadDatabase
+      responses:
+        200:
+          description: Successfully got the database.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DatabaseResponse'
+        404:
+          description: Database was not found.
+    delete:
+      tags:
+        - database
+      summary: Deletes an existing database in the database account.
+      security:
+        - ApiKeyAuth: []
+      operationId: deleteDatabase
+      responses:
+        200:
+          description: Successfully deleted the database.
+        404:
+          description: The database is not found.
 components:
   schemas:
     DocumentResponse:
@@ -235,6 +315,90 @@ components:
           minimum: 0
           exclusiveMinimum: true
           example: 1
+      required:
+        - _rid
+        - Documents
+        - _count
+    DatabaseRequest:
+      type: object
+      properties:
+        id:
+          description: The user-generated unique name for the database.
+          type: string
+          minLength: 0
+          maxLength: 255
+          uniqueItems: true
+          example: MyDatabaseName
+    DatabaseResponse:
+      type: object
+      properties:
+        id:
+          description: The user-generated unique name for the database.
+          type: string
+          minLength: 0
+          maxLength: 255
+          uniqueItems: true
+          example: MyDatabaseName
+        _rid:
+          description: A system generated property. The resource ID (_rid) is a unique identifier that is also hierarchical per the resource stack on the resource model. It is used internally for placement of and navigation to the database resource.
+          type: string
+          format: byte
+          example: "1KtjAImkcgwBAAAAAAAAAA=="
+        _ts:
+          description: A system generated property. It specifies the last updated timestamp of the resource. The value is a timestamp.
+          type: integer
+          format: int64
+          example: 1459218509
+        _self:
+          description: A system generated property. It is the unique addressable URI for the resource.
+          type: string
+          format: uri
+          example: "dbs/1KtjAA==/colls/1KtjAImkcgw=/docs/1KtjAImkcgwBAAAAAAAAAA==/"
+        _etag:
+          description: A system generated property that specifies the resource etag required for optimistic concurrency control.
+          type: string
+          format: guid
+          example: "\"00003200-0000-0000-0000-56f9e84d0000\""
+        _colls:
+          description: A system-generated property that specifies the addressable path of the collections resource.
+          type: string
+          example: "colls/"
+        _users:
+          description: A system-generated property that specifies the addressable path of the users resource.
+          type: string
+          example: "users/"
+      required:
+        - id
+        - _rid
+        - _ts
+        - _self
+        - _etag
+        - _colls
+        - _users
+    DatabaseFeedResponse:
+      type: object
+      properties:
+        _rid:
+          description: The _rid value is empty for this operation.
+          type: string
+          example: ""
+        Databases:
+          description: The databases returned as part of the list operation.
+          type: array
+          items:
+            $ref: '#/components/schemas/DatabaseResponse'
+          minLength: 0
+        _count:
+          description: This is the number of documents returned by the list operation.
+          type: integer
+          format: int64
+          minimum: 0
+          exclusiveMinimum: true
+          example: 1
+      required:
+        - _rid
+        - Documents
+        - _count
   parameters:
     DatabaseName:
       name: databaseName
