@@ -23,18 +23,19 @@ tags:
     url: https://docs.microsoft.com/en-us/rest/api/cosmos-db/documents
 paths:
   /dbs/{databaseName}/colls/{collectionName}/docs:
+    parameters:
+        - $ref: '#/components/parameters/DatabaseName'
+        - $ref: '#/components/parameters/CollectionName'
+        - $ref: '#/components/parameters/Version'
+        - $ref: '#/components/parameters/Date'
     post:
       tags:
-      - document
+        - document
       summary: Creates a new document in a collection.
-      security: 
+      security:
         - ApiKeyAuth: []
       operationId: createDocument
-      parameters: 
-      - $ref: '#/components/parameters/DatabaseName'
-      - $ref: '#/components/parameters/CollectionName'
-      - $ref: '#/components/parameters/Version'
-      - $ref: '#/components/parameters/Date'
+
       requestBody:
         description: JSON document that needs to be added to the collection.
         content:
@@ -45,6 +46,9 @@ paths:
       responses:
         201:
           description: The document was created.
+          headers:
+            x-ms-request-charge:
+              $ref: '#/components/headers/x-ms-request-charge'
           content:
             application/json:
               schema:
@@ -61,37 +65,176 @@ paths:
         413:
           description: The document size in the request exceeded the allowable document size.
           content: {}
+    get:
+      tags:
+        - document
+      summary: Returns a list of documents under the collection.
+      security:
+        - ApiKeyAuth: []
+      operationId: readFeed
+      parameters:
+        - $ref: '#/components/parameters/PartitionKey'
+        - $ref: '#/components/parameters/PageSize'
+        - $ref: '#/components/parameters/ContinuationToken'
+      responses:
+        200:
+          description: Successfully retrieved a page of results.
+          headers:
+            x-ms-continuation:
+              $ref: '#/components/headers/x-ms-continuation'
+            x-ms-request-charge:
+              $ref: '#/components/headers/x-ms-request-charge'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentFeedResponse'
+  /dbs/{databaseName}/colls/{collectionName}/docs/{documentId}:
+    parameters:
+      - $ref: '#/components/parameters/DatabaseName'
+      - $ref: '#/components/parameters/CollectionName'
+      - $ref: '#/components/parameters/DocumentId'
+      - $ref: '#/components/parameters/Version'
+      - $ref: '#/components/parameters/Date'
+      - $ref: '#/components/parameters/PartitionKey'
+    get:
+      tags:
+        - document
+      summary: Retrieves a document by its partition key and document key.
+      security:
+        - ApiKeyAuth: []
+      operationId: getDocument
+
+      responses:
+        200:
+          description: Successfully retrieved document.
+          headers:
+            x-ms-request-charge:
+              $ref: '#/components/headers/x-ms-request-charge'
+        404:
+          description: The document is no longer a resource, that is, the document was deleted.
+    put:
+      tags:
+        - document
+      summary: Replaces the entire content of a document.
+      security:
+        - ApiKeyAuth: []
+      operationId: replaceDocument
+      requestBody:
+        description: JSON document that needs to be added to the collection.
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentWithId'
+        required: true
+      responses:
+        200:
+          description: Successfully replaced the document.
+          headers:
+            x-ms-request-charge:
+              $ref: '#/components/headers/x-ms-request-charge'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentResponse'
+        400:
+          description: The JSON body is invalid. Check for missing curly brackets or quotes.
+        404:
+          description: The document no longer exists, i.e. the document was deleted.
+        409:
+          description: The id provided for the new document has been taken by an existing document.
+        413:
+          description: The document size in the request exceeded the allowable document size in a request.
+    delete:
+      tags:
+        - document
+      summary: Deletes an existing document in a collection.
+      security:
+        - ApiKeyAuth: []
+      operationId: deleteDocument
+      responses:
+        204:
+          description: Successfully deleted the document.
+          headers:
+            x-ms-request-charge:
+              $ref: '#/components/headers/x-ms-request-charge'
+        404:
+          description: The document was not found.
 components:
   schemas:
     DocumentResponse:
       type: object
       properties:
         id:
+          description: This is the unique name that identifies the document, i.e. no two documents can share the same id.
           type: string
           format: string
+          minLength: 0
+          maxLength: 255
+          uniqueItems: true
           example: "AndersenFamily"
         _rid:
+          description: This is a system generated property. The resource ID (_rid) is a unique identifier that is also hierarchical per the resource stack on the resource model. It is used internally for placement and navigation of the document resource.
           type: string
           format: byte
           example: "1KtjAImkcgwBAAAAAAAAAA=="
         _ts:
+          description: This is a system generated property. It specifies the last updated timestamp of the resource. The value is a timestamp.
           type: integer
           format: int64
           example: 1459218509
         _self:
+          description: This is a system generated property. It is the unique addressable URI for the resource.
           type: string
           format: uri
           example: "dbs/1KtjAA==/colls/1KtjAImkcgw=/docs/1KtjAImkcgwBAAAAAAAAAA==/"
         _etag:
-          type: string 
+          description: This is a system generated property that specifies the resource etag required for optimistic concurrency control.
+          type: string
           format: guid
           example: "\"00003200-0000-0000-0000-56f9e84d0000\""
         _attachments:
+          description: This is a system generated property that specifies the addressable path for the attachments resource.
           type: string
           format: string
           example: "attachments/"
+      required:
+        - id
+        - _rid
+        - _ts
+        - _self
+        - _etag
+        - _attachments
+      additionalProperties: true
     DocumentRequest:
       type: object
+    DocumentWithId:
+      type: object
+      properties:
+        id:
+          type: string
+          format: string
+          example: "AndersenFamily"
+      additionalProperties: true
+    DocumentFeedResponse:
+      type: object
+      properties:
+        _rid:
+          description: This is the system generated resource ID for the collection where the documents reside.
+          type: string
+          example: "d9RzAJRFKgw="
+        Documents:
+          description: The array of documents returned by the operation.
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentResponse'
+          minLength: 0
+        _count:
+          description: This is the number of documents returned by the list operation.
+          type: integer
+          format: int64
+          minimum: 0
+          exclusiveMinimum: true
+          example: 1
   parameters:
     DatabaseName:
       name: databaseName
@@ -109,6 +252,14 @@ components:
       schema:
         type: string
       example: MyCollection
+    DocumentId:
+      name: documentId
+      in: path
+      description: The document id.
+      required: true
+      schema:
+        type: string
+      example: AndersenFamily
     Version:
       name: x-ms-version
       in: header
@@ -116,7 +267,7 @@ components:
       required: true
       schema:
         type: string
-        enum: 
+        enum:
           - "2018-12-31"
           - "2018-09-17"
           - "2018-08-31"
@@ -131,6 +282,7 @@ components:
           - "2015-06-03"
           - "2015-04-08"
           - "2014-08-21"
+        default: "2018-12-31"
     Date:
       name: x-ms-date
       in: header
@@ -140,6 +292,52 @@ components:
         type: string
         format: date-time
       example: Tue, 29 Mar 2016 02:28:29 GMT
+    PartitionKey:
+      name: x-ms-documentdb-partitionkey
+      in: header
+      description: The logical partition key value
+      required: true
+      schema:
+        type: array
+        items:
+          oneOf:
+            - type: string
+              nullable: true
+            - type: number
+              nullable: true
+            - type: boolean
+              nullable: true
+      example: ["My Partition Key"]
+    PageSize:
+      name: x-ms-max-item-count
+      in: header
+      description: An integer indicating the maximum number of items to be returned per page.
+      required: false
+      schema:
+        type: integer
+        format: int64
+        minimum: 0
+        exclusiveMinimum: true
+      example: 100
+    ContinuationToken:
+      name: x-ms-continuation
+      in: header
+      description: A string token returned for queries and read-feed operations if there are more results to be read. Clients can retrieve the next page of results by resubmitting the request with the x-ms-continuation request header set to this value.
+      required: false
+      schema:
+        type: string
+  headers:
+    x-ms-request-charge:
+      description: The number of request units consumed by the operation
+      required: true
+      schema:
+        type: number
+      example: 4.2
+    x-ms-continuation:
+      description: A token to fetch additional results from the operation. The client can resubmit the request with the x-ms-continuation request header containing this value to resume execution.
+      required: true
+      schema:
+        type: string
   securitySchemes:
     ApiKeyAuth:
       type: apiKey
