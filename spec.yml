@@ -1,0 +1,808 @@
+openapi: 3.0.1
+info:
+  title: Microsoft Azure Cosmos DB REST API
+  description: "REST API for Microsoft Azure Cosmos DB"
+  termsOfService: https://docs.microsoft.com/en-us/azure/cosmos-db/introduction
+  contact:
+    email: brchon@microsoft.com
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.0
+externalDocs:
+  description: Find out more about Cosmos DB
+  url: https://docs.microsoft.com/en-us/azure/cosmos-db/introduction
+servers:
+  - url: https://localhost:8081/
+  - url: https://localhost:443/
+tags:
+  - name: document
+    description: Cosmos DB Document
+    externalDocs:
+      description: Find out more
+      url: https://docs.microsoft.com/en-us/rest/api/cosmos-db/documents
+  - name: database
+    description: Cosmos DB Datbase
+    externalDocs:
+      description: Find out more
+      url: https://docs.microsoft.com/en-us/rest/api/cosmos-db/databases
+  - name: collection
+    description: Cosmos DB Collection
+    externalDocs:
+      description: Find out more
+      url: https://docs.microsoft.com/en-us/rest/api/cosmos-db/collections
+paths:
+  /dbs/{databaseName}/colls/{collectionName}/docs:
+    parameters:
+      - $ref: "#/components/parameters/DatabaseName"
+      - $ref: "#/components/parameters/CollectionName"
+      - $ref: "#/components/parameters/Version"
+      - $ref: "#/components/parameters/Date"
+    post:
+      tags:
+        - document
+      summary: Creates a new document in a collection.
+      security:
+        - ApiKeyAuth: []
+      operationId: CreateDocument
+      requestBody:
+        description: JSON document that needs to be added to the collection.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DocumentRequest"
+        required: true
+      responses:
+        201:
+          description: The document was created.
+          headers:
+            x-ms-request-charge:
+              $ref: "#/components/headers/x-ms-request-charge"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentResponse"
+        400:
+          description: The JSON body is invalid.
+          content: {}
+        403:
+          description: The operation could not be completed because the storage limit of the partition has been reached.
+          content: {}
+        409:
+          description: The ID provided for the new document has been taken by an existing document.
+          content: {}
+        413:
+          description: The document size in the request exceeded the allowable document size.
+          content: {}
+    get:
+      tags:
+        - document
+      summary: Returns a list of documents under the collection.
+      security:
+        - ApiKeyAuth: []
+      operationId: ReadDocumentFeed
+      parameters:
+        - $ref: "#/components/parameters/PartitionKey"
+        - $ref: "#/components/parameters/PageSize"
+        - $ref: "#/components/parameters/ContinuationToken"
+      responses:
+        200:
+          description: Successfully retrieved a page of results.
+          headers:
+            x-ms-continuation:
+              $ref: "#/components/headers/x-ms-continuation"
+            x-ms-request-charge:
+              $ref: "#/components/headers/x-ms-request-charge"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentFeedResponse"
+  /dbs/{databaseName}/colls/{collectionName}/docs/{documentId}:
+    parameters:
+      - $ref: "#/components/parameters/DatabaseName"
+      - $ref: "#/components/parameters/CollectionName"
+      - $ref: "#/components/parameters/DocumentId"
+      - $ref: "#/components/parameters/Version"
+      - $ref: "#/components/parameters/Date"
+      - $ref: "#/components/parameters/PartitionKey"
+    get:
+      tags:
+        - document
+      summary: Retrieves a document by its partition key and document key.
+      security:
+        - ApiKeyAuth: []
+      operationId: ReadDocument
+      responses:
+        200:
+          description: Successfully retrieved document.
+          headers:
+            x-ms-request-charge:
+              $ref: "#/components/headers/x-ms-request-charge"
+        404:
+          description: The document is no longer a resource, that is, the document was deleted.
+    put:
+      tags:
+        - document
+      summary: Replaces the entire content of a document.
+      security:
+        - ApiKeyAuth: []
+      operationId: ReplaceDocument
+      requestBody:
+        description: JSON document that needs to be added to the collection.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DocumentWithId"
+        required: true
+      responses:
+        200:
+          description: Successfully replaced the document.
+          headers:
+            x-ms-request-charge:
+              $ref: "#/components/headers/x-ms-request-charge"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentResponse"
+        400:
+          description: The JSON body is invalid. Check for missing curly brackets or quotes.
+        404:
+          description: The document no longer exists, i.e. the document was deleted.
+        409:
+          description: The id provided for the new document has been taken by an existing document.
+        413:
+          description: The document size in the request exceeded the allowable document size in a request.
+    delete:
+      tags:
+        - document
+      summary: Deletes an existing document in a collection.
+      security:
+        - ApiKeyAuth: []
+      operationId: DeleteDocument
+      responses:
+        204:
+          description: Successfully deleted the document.
+          headers:
+            x-ms-request-charge:
+              $ref: "#/components/headers/x-ms-request-charge"
+        404:
+          description: The document was not found.
+  /dbs:
+    parameters:
+      - $ref: "#/components/parameters/Version"
+      - $ref: "#/components/parameters/Date"
+    post:
+      tags:
+        - database
+      summary: Creates a new database in the database account.
+      security:
+        - ApiKeyAuth: []
+      operationId: CreateDatabase
+      requestBody:
+        description: The JSON of the database that needs to be added to the database account.
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DatabaseRequest"
+      responses:
+        201:
+          description: Successfully created the database.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DatabaseResponse"
+    get:
+      tags:
+        - database
+      summary: Gets a list of databases in the database account.
+      security:
+        - ApiKeyAuth: []
+      operationId: ReadDatabaseFeed
+      parameters:
+        - $ref: "#/components/parameters/PageSize"
+        - $ref: "#/components/parameters/ContinuationToken"
+      responses:
+        200:
+          description: Succesfully read a page of from the database feed.
+          headers:
+            x-ms-continuation:
+              $ref: "#/components/headers/x-ms-continuation"
+            x-ms-request-charge:
+              $ref: "#/components/headers/x-ms-request-charge"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DatabaseFeedResponse"
+  /dbs/{databaseName}:
+    parameters:
+      - $ref: "#/components/parameters/DatabaseName"
+      - $ref: "#/components/parameters/Version"
+      - $ref: "#/components/parameters/Date"
+    get:
+      tags:
+        - database
+      summary: Gets a database from the database account.
+      security:
+        - ApiKeyAuth: []
+      operationId: ReadDatabase
+      responses:
+        200:
+          description: Successfully got the database.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DatabaseResponse"
+        404:
+          description: Database was not found.
+    delete:
+      tags:
+        - database
+      summary: Deletes an existing database in the database account.
+      security:
+        - ApiKeyAuth: []
+      operationId: DeleteDatabase
+      responses:
+        200:
+          description: Successfully deleted the database.
+        404:
+          description: The database is not found.
+  /dbs/{databaseName}/colls:
+    parameters:
+      - $ref: "#/components/parameters/DatabaseName"
+      - $ref: "#/components/parameters/Version"
+      - $ref: "#/components/parameters/Date"
+    post:
+      tags:
+        - collection
+      summary: Creates a new collection in a database.
+      security:
+        - ApiKeyAuth: []
+      operationId: CreateCollection
+      parameters:
+        - $ref: "#/components/parameters/Offer"
+      requestBody:
+        description: The collection definition
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CollectionRequest"
+      responses:
+        201:
+          description: Sucessfully created the collection.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CollectionResponse"
+        400:
+          description: Collection Request is malformed.
+        409:
+          description: The ID provided for the new collection has been taken by an existing collection.
+    get:
+      tags:
+        - collection
+      summary: Gets a page of results from the collection feed.
+      security:
+        - ApiKeyAuth: []
+      operationId: ReadCollectionFeed
+      parameters:
+        - $ref: "#/components/parameters/PageSize"
+        - $ref: "#/components/parameters/ContinuationToken"
+      responses:
+        200:
+          description: Successfully read a page of results from the collection feed.
+          headers:
+            x-ms-continuation:
+              $ref: "#/components/headers/x-ms-continuation"
+            x-ms-request-charge:
+              $ref: "#/components/headers/x-ms-request-charge"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CollectionFeedResponse"
+  /dbs/{databaseName}/colls/{collectionName}:
+    parameters:
+      - $ref: "#/components/parameters/DatabaseName"
+      - $ref: "#/components/parameters/CollectionName"
+      - $ref: "#/components/parameters/Version"
+      - $ref: "#/components/parameters/Date"
+    get:
+      tags:
+        - collection
+      summary: Gets a collection from the database
+      security:
+        - ApiKeyAuth: []
+      operationId: ReadCollection
+      responses:
+        200:
+          description: Sucessfully read the collection.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CollectionResponse"
+        404:
+          description: The collection is no longer a resource, that is, the collection was deleted.
+    delete:
+      tags:
+        - collection
+      summary: Deletes a collection from the database
+      security:
+        - ApiKeyAuth: []
+      operationId: DeleteCollection
+      responses:
+        204:
+          description: Sucessfully deleted the collection
+        404:
+          description: The collection is no longer a resource, that is, the collection was deleted.
+    replace:
+      tags:
+        - collection
+      summary: Replaces a collection from the database. Useful for updating the indexing policy.
+      security:
+        - ApiKeyAuth: []
+      operationId: ReplaceCollection
+      responses:
+        201:
+          description: Sucessfully replaced the collection
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CollectionResponse"
+        400:
+          description: Collection Request is malformed.
+        409:
+          description: The ID provided for the new collection has been taken by an existing collection.
+components:
+  schemas:
+    DocumentResponse:
+      type: object
+      properties:
+        id:
+          description: This is the unique name that identifies the document, i.e. no two documents can share the same id.
+          type: string
+          format: string
+          minLength: 0
+          maxLength: 255
+          uniqueItems: true
+          example: "AndersenFamily"
+        _rid:
+          description: This is a system generated property. The resource ID (_rid) is a unique identifier that is also hierarchical per the resource stack on the resource model. It is used internally for placement and navigation of the document resource.
+          type: string
+          format: byte
+          example: "1KtjAImkcgwBAAAAAAAAAA=="
+        _ts:
+          description: This is a system generated property. It specifies the last updated timestamp of the resource. The value is a timestamp.
+          type: integer
+          format: int64
+          example: 1459218509
+        _self:
+          description: This is a system generated property. It is the unique addressable URI for the resource.
+          type: string
+          format: uri
+          example: "dbs/1KtjAA==/colls/1KtjAImkcgw=/docs/1KtjAImkcgwBAAAAAAAAAA==/"
+        _etag:
+          description: This is a system generated property that specifies the resource etag required for optimistic concurrency control.
+          type: string
+          format: guid
+          example: '"00003200-0000-0000-0000-56f9e84d0000"'
+        _attachments:
+          description: This is a system generated property that specifies the addressable path for the attachments resource.
+          type: string
+          format: string
+          example: "attachments/"
+      required:
+        - id
+        - _rid
+        - _ts
+        - _self
+        - _etag
+        - _attachments
+    DocumentRequest:
+      type: object
+    DocumentWithId:
+      type: object
+      properties:
+        id:
+          type: string
+          format: string
+          example: "AndersenFamily"
+      additionalProperties: true
+    DocumentFeedResponse:
+      type: object
+      properties:
+        _rid:
+          description: This is the system generated resource ID for the collection where the documents reside.
+          type: string
+          example: "d9RzAJRFKgw="
+        Documents:
+          description: The array of documents returned by the operation.
+          type: array
+          items:
+            $ref: "#/components/schemas/DocumentResponse"
+          minLength: 0
+        _count:
+          description: This is the number of documents returned by the list operation.
+          type: integer
+          format: int64
+          minimum: 0
+          exclusiveMinimum: true
+          example: 1
+      required:
+        - _rid
+        - Documents
+        - _count
+    DatabaseRequest:
+      type: object
+      properties:
+        id:
+          description: The user-generated unique name for the database.
+          type: string
+          minLength: 0
+          maxLength: 255
+          uniqueItems: true
+          example: MyDatabaseName
+    ResourceId:
+      description: A system generated property. The resource ID (_rid) is a unique identifier that is also hierarchical per the resource stack on the resource model. It is used internally for placement of and navigation to the database resource.
+      type: string
+      format: byte
+      example: "1KtjAImkcgwBAAAAAAAAAA=="
+    Timestamp:
+      description: A system generated property. It specifies the last updated timestamp of the resource. The value is a timestamp.
+      type: integer
+      format: int64
+      example: 1459218509
+    SelfLink:
+      description: A system generated property. It is the unique addressable URI for the resource.
+      type: string
+      format: uri
+      example: "dbs/1KtjAA==/colls/1KtjAImkcgw=/docs/1KtjAImkcgwBAAAAAAAAAA==/"
+    Etag:
+      description: A system generated property that specifies the resource etag required for optimistic concurrency control.
+      type: string
+      format: guid
+      example: '"00003200-0000-0000-0000-56f9e84d0000"'
+    DatabaseResponse:
+      type: object
+      properties:
+        id:
+          description: The user-generated unique name for the database.
+          type: string
+          minLength: 0
+          maxLength: 255
+          uniqueItems: true
+          example: MyDatabaseName
+        _rid:
+          $ref: "#/components/schemas/ResourceId"
+        _ts:
+          $ref: "#/components/schemas/Timestamp"
+        _self:
+          $ref: "#/components/schemas/SelfLink"
+        _etag:
+          $ref: "#/components/schemas/Etag"
+        _colls:
+          description: A system-generated property that specifies the addressable path of the collections resource.
+          type: string
+          example: "colls/"
+        _users:
+          description: A system-generated property that specifies the addressable path of the users resource.
+          type: string
+          example: "users/"
+      required:
+        - id
+        - _rid
+        - _ts
+        - _self
+        - _etag
+        - _colls
+        - _users
+    DatabaseFeedResponse:
+      type: object
+      properties:
+        _rid:
+          description: The _rid value is empty for this operation.
+          type: string
+          example: ""
+        Databases:
+          description: The databases returned as part of the list operation.
+          type: array
+          items:
+            $ref: "#/components/schemas/DatabaseResponse"
+          minLength: 0
+        _count:
+          description: This is the number of documents returned by the list operation.
+          type: integer
+          format: int64
+          minimum: 0
+          exclusiveMinimum: true
+          example: 1
+      required:
+        - _rid
+        - Documents
+        - _count
+    IndexingPolicy:
+      description: This value is used to configure indexing policy. By default, the indexing is automatic for all document paths within the collection.
+      type: object
+      properties:
+        indexingMode:
+          type: string
+          enum:
+            - Consistent
+            - None
+          description: >
+            Consistent: The index is updated synchronously as you create, update or delete items. This means that the consistency of your read queries will be the consistency configured for the account.
+            None: Indexing is disabled on the container. This is commonly used when a container is used as a pure key-value store without the need for secondary indexes. It can also be used to improve the performance of bulk operations. After the bulk operations are complete, the index mode can be set to Consistent and then monitored using the IndexTransformationProgress until complete.
+          default: consistent
+        includedPaths:
+          type: array
+          items:
+            type: object
+            properties:
+              path:
+                description: Path to include for indexing. Index paths start with the root (/) and typically end with the * wildcard operator. For example, /payload/* can be used to exclude everything under the payload property from indexing.
+                type: string
+                example: "/*"
+        excludedPaths:
+          type: array
+          items:
+            type: object
+            properties:
+              path:
+                description: Path to exclude from indexing. Index paths start with the root (/) and typically end with the * wildcard operator. For example, /payload/* can be used to exclude everything under the payload property from indexing.
+                type: string
+                example: "/payload/*"
+        compositeIndexes:
+          type: array
+          items:
+            type: object
+            properties:
+              path:
+                description: Path to include as part of the composite index. Index paths start with the root (/) and typically end with the * wildcard operator. For example, /payload/* can be used to exclude everything under the payload property from indexing.
+                type: string
+                example: "/name"
+              order:
+                description: Sort order for the path.
+                type: string
+                enum:
+                  - asc
+                  - desc
+        spatialIndexes:
+          type: array
+          items:
+            type: object
+            properties:
+              path:
+                description: Path to include for spatial indexing.
+                type: string
+                example: "/location"
+              types:
+                description: The spatial types to index.
+                type: array
+                items:
+                  type: string
+                  enum:
+                    - Point
+                    - Polygon
+                    - LineString
+                    - MultiPolygon
+    PartitionKey:
+      description: This value is used to configure the partition key to be used for partitioning data into multiple partitions.
+      type: object
+      properties:
+        paths:
+          type: array
+          items:
+            description: An array of paths using which data within the collection can be partitioned. Paths must not contain a wildcard or a trailing slash. For example, the JSON property “AccountNumber” is specified as “/AccountNumber”. The array must contain only a single value.
+            type: string
+            example: "/city"
+        kind:
+          description: The algorithm used for partitioning. Only Hash is supported.
+          type: string
+          enum:
+            - Hash
+            - Range
+        version:
+          description: To use the large partition key set the version to 2. To learn about large partition keys, see how to create containers with large partition key article.
+          type: integer
+          format: int64
+          default: 1
+          example: 2
+      required:
+        - paths
+    CollectionRequest:
+      type: object
+      properties:
+        id:
+          description: The user generated unique name for the collection.
+          type: string
+          minLength: 0
+          maxLength: 255
+          uniqueItems: true
+          example: MyCollectionName
+        indexingPolicy:
+          $ref: "#/components/schemas/IndexingPolicy"
+        partitionKey:
+          $ref: "#/components/schemas/PartitionKey"
+      required:
+        - id
+    CollectionResponse:
+      type: object
+      properties:
+        id:
+          description: The user generated unique name for the collection.
+          type: string
+          minLength: 0
+          maxLength: 255
+          uniqueItems: true
+          example: MyCollectionName
+        indexingPolicy:
+          $ref: "#/components/schemas/IndexingPolicy"
+        partitionKey:
+          $ref: "#/components/schemas/PartitionKey"
+        _rid:
+          $ref: "#/components/schemas/ResourceId"
+        _ts:
+          $ref: "#/components/schemas/Timestamp"
+        _self:
+          $ref: "#/components/schemas/SelfLink"
+        _etag:
+          $ref: "#/components/schemas/Etag"
+        _doc:
+          description: A system generated property that specifies the addressable path of the documents resource.
+          example: "docs/"
+        _sprocs:
+          description: A system generated property that specifies the addressable path of the stored procedures (sprocs) resource.
+          example: "sprocs/"
+        _triggers:
+          description: A system generated property that specifies the addressable path of the triggers resource.
+          example: "triggers/"
+        _udfs:
+          description: A system generated property that specifies the addressable path of the user-defined functions (udfs) resource.
+          example: "udfs/"
+        _conflicts:
+          description: A system generated property that specifies the addressable path of the conflicts resource. During an operation on a resource within a collection, if a conflict occurs, users can inspect the conflicting resources by performing a GET on the conflicts URI path.
+          example: "conflicts/"
+    CollectionFeedResponse:
+      type: object
+      properties:
+        _rid:
+          description: The _rid value is empty for this operation.
+          type: string
+          example: ""
+        DocumentCollections:
+          description: The collections returned as part of the list operation.
+          type: array
+          items:
+            $ref: "#/components/schemas/CollectionResponse"
+          minLength: 0
+        _count:
+          description: This is the number of collections returned by the list operation.
+          type: integer
+          format: int64
+          minimum: 0
+          exclusiveMinimum: true
+          example: 1
+      required:
+        - _rid
+        - Documents
+        - _count
+  parameters:
+    DatabaseName:
+      name: databaseName
+      in: path
+      description: The database name.
+      required: true
+      schema:
+        type: string
+      example: MyDatabase
+    CollectionName:
+      name: collectionName
+      in: path
+      description: The collection name.
+      required: true
+      schema:
+        type: string
+      example: MyCollection
+    DocumentId:
+      name: documentId
+      in: path
+      description: The document id.
+      required: true
+      schema:
+        type: string
+      example: AndersenFamily
+    Version:
+      name: x-ms-version
+      in: header
+      description: The API version.
+      required: true
+      schema:
+        type: string
+        enum:
+          - "2018-12-31"
+          - "2018-09-17"
+          - "2018-08-31"
+          - "2018-06-18"
+          - "2017-11-15"
+          - "2017-05-03"
+          - "2017-02-22"
+          - "2017-01-19"
+          - "2016-07-11"
+          - "2015-12-16"
+          - "2015-08-06"
+          - "2015-06-03"
+          - "2015-04-08"
+          - "2014-08-21"
+        default: "2018-12-31"
+    Date:
+      name: x-ms-date
+      in: header
+      description: The date the request was sent.
+      required: true
+      schema:
+        type: string
+        format: date-time
+      example: Tue, 29 Mar 2016 02:28:29 GMT
+    PartitionKey:
+      name: x-ms-documentdb-partitionkey
+      in: header
+      description: The logical partition key value
+      required: true
+      schema:
+        type: array
+        items:
+          oneOf:
+            - type: string
+              nullable: true
+            - type: number
+              nullable: true
+            - type: boolean
+              nullable: true
+      example: ["My Partition Key"]
+    PageSize:
+      name: x-ms-max-item-count
+      in: header
+      description: An integer indicating the maximum number of items to be returned per page.
+      required: false
+      schema:
+        type: integer
+        format: int64
+        minimum: 0
+        exclusiveMinimum: true
+      example: 100
+    ContinuationToken:
+      name: x-ms-continuation
+      in: header
+      description: A string token returned for queries and read-feed operations if there are more results to be read. Clients can retrieve the next page of results by resubmitting the request with the x-ms-continuation request header set to this value.
+      required: false
+      schema:
+        type: string
+    Offer:
+      name: x-ms-offer-throughput
+      in: header
+      description: The user specified throughput for the collection expressed in units of request units per second.
+      required: true
+      schema:
+        type: integer
+        format: int64
+        minimum: 400
+        exclusiveMinimum: false
+        maximum: 10000000
+        exclusiveMaximum: false
+        multipleOf: 100
+      example: 10000
+  headers:
+    x-ms-request-charge:
+      description: The number of request units consumed by the operation
+      required: true
+      schema:
+        type: number
+      example: 4.2
+    x-ms-continuation:
+      description: A token to fetch additional results from the operation. The client can resubmit the request with the x-ms-continuation request header containing this value to resume execution.
+      required: true
+      schema:
+        type: string
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: authorization
